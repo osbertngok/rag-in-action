@@ -42,8 +42,10 @@ def ex_00_01_03():
         model="models/gemini-1.5-flash",
         api_key=os.getenv("GEMINI_API_KEY")
     )
+
+    # Updated embedding model initialization
     embed_model = HuggingFaceEmbedding(
-        model="BAAI/bge-small-zh"
+        model_name="BAAI/bge-small-zh"  # Changed from model to model_name
     )
 
     # 加载数据
@@ -52,6 +54,7 @@ def ex_00_01_03():
     # 构建索引
     index = VectorStoreIndex.from_documents(
         documents,
+        embed_model=embed_model,
         # llm=llm  # 设置构建索引时的语言模型（一般不需要）
     )
 
