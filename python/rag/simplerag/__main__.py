@@ -25,9 +25,10 @@ def ex_00_01_03() -> None:
     load_dotenv()
 
     # 创建 Gemini LLM
-    llm: GoogleGenAI  = GoogleGenAI(
+    llm: GoogleGenAI = GoogleGenAI(
         model="models/gemini-1.5-flash",
-        api_key=os.getenv("GEMINI_API_KEY")
+        api_key=os.getenv("GEMINI_API_KEY"),
+        timeout=120  # Add timeout parameter
     )
 
     # Updated embedding model initialization

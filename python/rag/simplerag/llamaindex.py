@@ -25,7 +25,7 @@ class LlamaIndexWrapper(RAGWrapperInterface):
         # 创建 Gemini LLM
         llm: GoogleGenAI  = GoogleGenAI(
             model="models/gemini-1.5-flash",
-            api_key=os.getenv("GEMINI_API_KEY")
+            api_key=os.getenv("GOOGLE_API_KEY")
         )
 
         # Updated embedding model initialization

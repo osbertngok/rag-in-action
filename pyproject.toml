@@ -10,9 +10,27 @@ requires-python = ">=3.10"
 dependencies = [
     "numpy<2.0.0",
     "python-dotenv~=1.0.0",
+
+    # llama-index
     "llama-index==0.12.25",
     "llama-index-llms-google-genai==0.1.6",
-    "llama-index-embeddings-huggingface==0.5.2"
+    "llama-index-embeddings-huggingface==0.5.2",
+
+    # langchain
+    "langchain",
+    "langchain-community",
+    "langchain-core",
+    "langchain-huggingface",
+    "langchain-text-splitters",
+    "langchain-google-genai==2.0.5",
+
+    # Google API dependencies
+    "google-generativeai==0.8.4",
+    "google-api-core",
+    "google-auth",
+    "grpcio>=1.71.0",
+    "grpcio-status",
+    "protobuf"
 ]
 
 [project.optional-dependencies]
