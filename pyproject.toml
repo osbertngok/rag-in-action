@@ -40,8 +40,12 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 strict_optional = true
-packages = ["rag"]
+packages = ["rag", "testrag"]
 mypy_path = "python"
+
+[[tool.mypy.overrides]]
+module = "llama_index.*"
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "google.*"

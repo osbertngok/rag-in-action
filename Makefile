@@ -93,3 +93,7 @@ PYTHON3_LOCATION := /usr/local/bin/python3.12
 ifeq ("$(wildcard $(PYTHON3_LOCATION))","")
     $(error Cannot find file $(PYTHON3_LOCATION))
 endif
+
+.PHONY: test-simplerag
+test-simplerag:
+	@.ve3/bin/python3 -m pytest python/testrag/testsimplerag.py
