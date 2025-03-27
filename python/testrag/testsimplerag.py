@@ -16,7 +16,7 @@ class TestSimpleRAG:
 
         llama_index_wrapper: LlamaIndexWrapper = LlamaIndexWrapper(document_path=document_path)
         answer: str = llama_index_wrapper.get_answer(question=question)
-        log.warn(answer)
+        print(answer)
         assert answer is not None
         assert answer != ""
 
@@ -26,6 +26,6 @@ class TestSimpleRAG:
 
         langchain_wrapper: LangChainWrapper = LangChainWrapper(url=url)
         answer: str = langchain_wrapper.get_answer(question=question)
-        log.warn(answer)
+        print(answer)
         assert answer is not None
         assert answer != ""

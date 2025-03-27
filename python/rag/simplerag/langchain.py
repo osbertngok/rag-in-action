@@ -8,7 +8,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 from rag.simplerag.interface import RAGWrapperInterface
 
-from typing import Dict
+from typing import Dict, List, Any
 
 class LangChainWrapper(RAGWrapperInterface):
 
@@ -22,7 +22,7 @@ class LangChainWrapper(RAGWrapperInterface):
         load_dotenv()
 
         loader = WebBaseLoader(
-            web_paths=("https://zh.wikipedia.org/wiki/黑神话：悟空",)
+            web_paths=(self.url,)
         )
         docs = loader.load()
 
@@ -98,16 +98,13 @@ class LangChainWrapper(RAGWrapperInterface):
             return {"context": retrieved_docs}
 
         # 8. 定义生成步骤
-        def generate(state: State) -> Dict[str, str]:
+        def generate(state: State) -> Dict[str, str | List[str | Dict[Any, Any]]]:
             llm: ChatGoogleGenerativeAI = ChatGoogleGenerativeAI(
                 model="gemini-1.5-flash",
                 temperature=0.7,        # 控制输出的随机性(0-1之间,越大越随机)
                 max_tokens=2048,        # 最大输出长度
                 top_p=0.95,            # 控制输出的多样性(0-1之间)
                 top_k=50,              # 控制每次选择的候选token数量
-                presence_penalty=0.0,   # 重复惩罚系数(-2.0到2.0之间)
-                frequency_penalty=0.0,  # 频率惩罚系数(-2.0到2.0之间)
-                google_api_key=os.getenv("GOOGLE_API_KEY"),  # 从环境变量加载API key
                 transport="rest" # 默认是grpc
             )
             docs_content = "\n\n".join(doc.page_content for doc in state["context"])
@@ -117,7 +114,9 @@ class LangChainWrapper(RAGWrapperInterface):
 
         # 9. 构建和编译应用
         from langgraph.graph import START, StateGraph # pip install langgraph
-        graph = (
+        from langgraph.graph.state import CompiledStateGraph
+        
+        graph: CompiledStateGraph = (
             StateGraph(State)
             .add_sequence([retrieve, generate])
             .add_edge(START, "retrieve")
@@ -125,7 +124,7 @@ class LangChainWrapper(RAGWrapperInterface):
         )                                         
 
         # 10. 运行查询
-        answer = graph.invoke({"question": question})
-        return str(answer)
+        resp: Dict[str, str] = graph.invoke({"question": question})
+        return str(resp["answer"])
 
 
