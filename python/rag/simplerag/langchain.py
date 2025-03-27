@@ -8,6 +8,8 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 from rag.simplerag.interface import RAGWrapperInterface
 
+from typing import Dict
+
 class LangChainWrapper(RAGWrapperInterface):
 
     def __init__(self, url: str) -> None:
@@ -53,29 +55,77 @@ class LangChainWrapper(RAGWrapperInterface):
 
         # 7. 构建提示模板
 
+        """
+        https://smith.langchain.com/hub/rlm/rag-prompt
 
-        prompt = ChatPromptTemplate.from_template("""
-                        基于以下上下文，回答问题。如果上下文中没有相关信息，
-                        请说"我无法从提供的上下文中找到相关信息"。
-                        上下文: {context}
-                        问题: {question}
-                        回答:"""
-                                                )
+        human
 
-        # 8. 使用大语言模型生成答案
-        llm: ChatGoogleGenerativeAI = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
-            temperature=0.7,        # 控制输出的随机性(0-1之间,越大越随机)
-            max_tokens=2048,        # 最大输出长度
-            top_p=0.95,            # 控制输出的多样性(0-1之间)
-            top_k=50,              # 控制每次选择的候选token数量
-            presence_penalty=0.0,   # 重复惩罚系数(-2.0到2.0之间)
-            frequency_penalty=0.0,  # 频率惩罚系数(-2.0到2.0之间)
-            google_api_key=os.getenv("GOOGLE_API_KEY"),  # 从环境变量加载API key
-            transport="rest"
-        )
+        You are an assistant for question-answering tasks. 
+        Use the following pieces of retrieved context to answer the question. 
+        If you don't know the answer, just say that you don't know. 
+        Use three sentences maximum and keep the answer concise.
 
-        answer = llm.invoke(prompt.format(question=question, context=docs_content))
+        Question: {question} 
+        Context: {context} 
+        Answer:
+
+        """
+        from langchain import hub
+        prompt: ChatPromptTemplate = hub.pull("rlm/rag-prompt")
+
+        # Or, 
+        #
+        # prompt = ChatPromptTemplate.from_template("""
+        #                 基于以下上下文，回答问题。如果上下文中没有相关信息，
+        #                 请说"我无法从提供的上下文中找到相关信息"。
+        #                 上下文: {context}
+        #                 问题: {question}
+        #                 回答:"""
+        #
+
+        # 6. 定义应用状态
+        from typing import List
+        from typing_extensions import TypedDict
+        from langchain_core.documents import Document
+        class State(TypedDict):
+            question: str
+            context: List[Document]
+            answer: str
+
+        # 7. 定义检索步骤
+        def retrieve(state: State) -> Dict[str, List[Document]]:
+            retrieved_docs = self.vector_store.similarity_search(state["question"])
+            return {"context": retrieved_docs}
+
+        # 8. 定义生成步骤
+        def generate(state: State) -> Dict[str, str]:
+            llm: ChatGoogleGenerativeAI = ChatGoogleGenerativeAI(
+                model="gemini-1.5-flash",
+                temperature=0.7,        # 控制输出的随机性(0-1之间,越大越随机)
+                max_tokens=2048,        # 最大输出长度
+                top_p=0.95,            # 控制输出的多样性(0-1之间)
+                top_k=50,              # 控制每次选择的候选token数量
+                presence_penalty=0.0,   # 重复惩罚系数(-2.0到2.0之间)
+                frequency_penalty=0.0,  # 频率惩罚系数(-2.0到2.0之间)
+                google_api_key=os.getenv("GOOGLE_API_KEY"),  # 从环境变量加载API key
+                transport="rest" # 默认是grpc
+            )
+            docs_content = "\n\n".join(doc.page_content for doc in state["context"])
+            messages = prompt.invoke({"question": state["question"], "context": docs_content})
+            response = llm.invoke(messages)
+            return {"answer": response.content}
+
+        # 9. 构建和编译应用
+        from langgraph.graph import START, StateGraph # pip install langgraph
+        graph = (
+            StateGraph(State)
+            .add_sequence([retrieve, generate])
+            .add_edge(START, "retrieve")
+            .compile()
+        )                                         
+
+        # 10. 运行查询
+        answer = graph.invoke({"question": question})
         return str(answer)
 
 
